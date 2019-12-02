@@ -1,0 +1,146 @@
+%YAML 1.2
+---
+# Very rudamenery support for the Volt Language.
+#
+# This file copies heavily from the D language syntax.
+name: Volt
+comment: Volt language
+file_extensions:
+  - volt
+scope: source.volt
+
+variables:
+  name: '[[:alpha:]_][[:alpha:]0-9_]*'
+  decl_tag: 'fn|this|struct|union|class|interface|enum|import'
+  escape_sequence: '\\([''"?\\0abfnrtv]|x{{hex_char}}{2}|[0-7]{1,3}|u{{hex_char}}{4}|U{{hex_char}}{8}|&\w+;)'
+  hex_char: '[0-9a-fA-F]'
+
+contexts:
+  prototype:
+    - include: comments
+
+  main:
+    - include: module
+    - include: declarations
+    - include: keywords
+    - include: numbers
+    - include: strings
+
+  module:
+    - match: \bmodule\b
+      scope: keyword.declaration.namespace.volt
+      push:
+        - meta_scope: meta.namespace.volt
+        - match: '{{name}}(?=\s*(;|$))'
+          scope: meta.path.volt entity.name.namespace.volt
+        - match: '{{name}}'
+          scope: meta.path.volt variable.other.volt
+          push:
+            - match: \.
+              scope: meta.path.volt punctuation.accessor.dot.volt
+              pop: true
+            - include: not-whitespace-illegal
+        - include: expect-end-of-line
+
+  declarations:
+    - match: '(fn)\s+({{name}})\s*(\()(?=[^\)]+\))'
+      captures:
+        1: keyword.function.volt
+        2: entity.name.function.volt
+        3: meta.group.c punctuation.section.group.begin.c
+      push:
+        - meta_scope: meta.function-call.c
+        - meta_content_scope: meta.group.c
+        - match: '\)'
+          scope: meta.group.c punctuation.section.group.end.c
+          pop: true
+    - match: '(import)\s+({{name}})\s*='
+      captures:
+        1: keyword.import.volt
+        2: entity.name.import.volt
+    - match: '(import)\s+{{name}}'
+      captures:
+        1: keyword.import.volt
+    - match: '({{decl_tag}})\s+({{name}})'
+      captures:
+        1: keyword.function.volt
+        2: entity.name.declaration.volt
+
+  keywords:
+    - match: '\b(if|else|for|while|try|catch|finally|return|case|switch|default|foreach|foreach_reverse)\b'
+      scope: keyword.control.volt
+    - match: '\b(struct|class|interface|enum|this|import|fn)\b'
+      scope: keyword.aggregate.volt
+    - match: '\b(version)\b'
+      scope: keyword.version.volt
+    - match: '\b(private|protected|public|export)\b'
+      scope: storage.modifier.access-control.volt
+    - match: '\b(const|immutable|scope|ref|in|out)\b'
+      scope: storage.modifier.volt
+
+  numbers:
+    - match: '\b(-)?[0-9.]+\b'
+      scope: constant.numeric.volt
+
+  strings:
+    - match: '"'
+      scope: punctuation.definition.string.begin.volt
+      set:
+        - meta_include_prototype: false
+        - meta_scope: meta.string.volt string.quoted.double.volt
+        - match: '"'
+          scope: punctuation.definition.string.end.volt
+          pop: true
+        - match: '{{escape_sequence}}'
+          scope: constant.character.escape.volt
+        - match: \\.
+          scope: invalid.illegal.unknown-escape.volt
+    - match: "`"
+      scope: punctuation.definition.string.begin.volt
+      set:
+        - meta_include_prototype: false
+        - meta_scope: meta.string.d string.quoted.double.raw.backtick.volt
+        - match: '`'
+          captures:
+            1: punctuation.definition.string.end.volt
+            2: storage.type.string.volt
+          pop: true
+
+  comments:
+    - match: /\*\*?
+      scope: punctuation.definition.comment.volt
+      push:
+        - meta_scope: comment.block.volt
+        - match: \*/
+          scope: punctuation.definition.comment.volt
+          pop: true
+    - match: (///?).*$\n?
+      scope: comment.line.double-slash.volt
+      captures:
+        1: punctuation.definition.comment.volt
+    - include: nested-comment
+  nested-comment:
+    - match: /\+\+?
+      scope: punctuation.definition.comment.volt
+      push:
+        - meta_scope: comment.block.nested.volt
+        - match: \+/
+          scope: punctuation.definition.comment.volt
+          pop: true
+        - include: nested-comment
+
+  not-whitespace-illegal:
+    - match: '\S'
+      scope: invalid.illegal.volt
+  not-whitespace-illegal-pop:
+    - match: '\S'
+      scope: invalid.illegal.volt
+      pop: true
+
+  end-of-line:
+    - match: ';'
+      scope: punctuation.terminator.volt
+      pop: true
+  expect-end-of-line:
+    - include: end-of-line
+    - include: not-whitespace-illegal-pop
