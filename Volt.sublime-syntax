@@ -1,6 +1,6 @@
 %YAML 1.2
 ---
-# Very rudamenery support for the Volt Language.
+# Very rudimentary support for the Volt Language.
 #
 # This file copies heavily from the D language syntax.
 name: Volt
