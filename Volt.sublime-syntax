@@ -67,7 +67,7 @@ contexts:
         2: entity.name.declaration.volt
 
   keywords:
-    - match: '\b(if|else|for|while|try|catch|finally|return|case|switch|default|foreach|foreach_reverse)\b'
+    - match: '\b(if|else|for|while|try|catch|finally|return|switch|case|break|default|foreach|foreach_reverse)\b'
       scope: keyword.control.volt
     - match: '\b(version)\b'
       scope: keyword.version.volt
